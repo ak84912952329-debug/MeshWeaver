@@ -23,18 +23,23 @@ class Message:
     sender: str
     payload: dict[str, Any]
     message_id: str = ""
-
     def __post_init__(self) -> None:
+        if not isinstance(self.message_type, str):
+            raise ValueError("Message type must be a string.")
+
         if self.message_type not in SUPPORTED_TYPES:
             raise ValueError(
                 f"Unsupported message type: {self.message_type}"
             )
 
-        if not self.sender:
-            raise ValueError("Sender cannot be empty.")
+        if not isinstance(self.sender, str) or not self.sender.strip():
+            raise ValueError("Sender must be a non-empty string.")
 
         if not isinstance(self.payload, dict):
             raise ValueError("Payload must be a dictionary.")
+
+        if not isinstance(self.message_id, str):
+            raise ValueError("Message ID must be a string.")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the message into a dictionary."""
