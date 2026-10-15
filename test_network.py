@@ -1,6 +1,6 @@
 import unittest
 
-from MeshWeaver.protocol import Message
+from protocol import Message
 
 
 class TestMessageProtocol(unittest.TestCase):
@@ -31,6 +31,30 @@ class TestMessageProtocol(unittest.TestCase):
     def test_invalid_json(self):
         with self.assertRaises(ValueError):
             Message.decode(b"not valid json")
+    def test_empty_sender_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Message(
+                message_type="status",
+                sender="   ",
+                payload={},
+            )
+
+    def test_non_string_message_type_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Message(
+                message_type=123,
+                sender="peer1",
+                payload={},
+            )
+
+    def test_non_string_message_id_is_rejected(self):
+        with self.assertRaises(ValueError):
+            Message(
+                message_type="ping",
+                sender="peer1",
+                payload={},
+                message_id=123,
+            )
 
 
 if __name__ == "__main__":
