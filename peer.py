@@ -27,9 +27,16 @@ class Peer:
         if self.connected:
             raise ConnectionError("Peer is already connected.")
 
-        self.reader, self.writer = await asyncio.open_connection(
+        try:
+            self.reader, self.writer = await asyncio.open_connection(
             host, port
         )
+        except (OSError, asyncio.TimeoutError) as exc:
+            self.reader = None
+            self.writer = None
+            raise ConnectionError(
+            f"Failed to connect to peer {self.peer_id}: {exc}"
+        ) from exc
 
     async def send(self, message: Message) -> None:
         """Send a length-independent newline-delimited JSON message."""
