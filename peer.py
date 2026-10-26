@@ -39,9 +39,12 @@ class Peer:
         ) from exc
 
     async def send(self, message: Message) -> None:
-        """Send a length-independent newline-delimited JSON message."""
+        """Send a valid message to the connected peer."""
         if not self.connected or self.writer is None:
             raise ConnectionError("Peer is not connected.")
+
+        if not isinstance(message, Message):
+            raise ValueError("Only Message objects can be sent.")
 
         self.writer.write(message.encode() + b"\n")
         await self.writer.drain()
