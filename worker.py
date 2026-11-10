@@ -1,6 +1,5 @@
 """Worker module for MeshWeaver task execution."""
 
-import asyncio
 import inspect
 from typing import Callable
 
@@ -42,15 +41,10 @@ class Worker:
                     f"Function '{task.function_name}' is not registered."
                 )
 
-            if inspect.iscoroutinefunction(function):
-                result = await function(*task.args, **task.kwargs)
-            else:
-                result = await asyncio.to_thread(
-                    function, *task.args, **task.kwargs
-                )
+            result = function(*task.args, **task.kwargs)
 
-                if inspect.isawaitable(result):
-                    result = await result
+            if inspect.isawaitable(result):
+                result = await result
 
             task.mark_completed(result)
             return result

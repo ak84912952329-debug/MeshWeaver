@@ -25,8 +25,12 @@ class PeerTaskServer:
 
     async def handle_client(self, reader, writer):
         """Receive a task, execute it, and return the result."""
+        response = None
+
         try:
-            raw = await reader.readline()
+            raw = await asyncio.wait_for(
+                reader.readline(), timeout=10
+            )
 
             if not raw:
                 return
@@ -45,7 +49,9 @@ class PeerTaskServer:
                 task_id=payload["task_id"],
             )
 
-            await self.broker.submit_task(task)
+            await asyncio.wait_for(
+                self.broker.submit_task(task), timeout=10
+            )
 
             response = Message(
                 message_type="task_result",
@@ -58,6 +64,13 @@ class PeerTaskServer:
                 },
             )
 
+        except asyncio.TimeoutError:
+            response = Message(
+                message_type="error",
+                sender=self.peer_id,
+                payload={"error": "Task processing timed out."},
+            )
+
         except Exception as exc:
             response = Message(
                 message_type="error",
@@ -66,17 +79,24 @@ class PeerTaskServer:
             )
 
         try:
-            writer.write(response.encode() + b"\n")
-            await writer.drain()
+            if response is not None:
+                writer.write(response.encode() + b"\n")
+                await writer.drain()
+        except (ConnectionError, OSError):
+            pass
         finally:
             writer.close()
-            await writer.wait_closed()
+            try:
+                await writer.wait_closed()
+            except (ConnectionError, OSError):
+                pass
 
     async def close(self):
         """Stop the task receiving server."""
         if self.server is not None:
             self.server.close()
             await self.server.wait_closed()
+            self.server = None
 
 
 class PeerTaskClient:
@@ -101,12 +121,24 @@ class PeerTaskClient:
             },
         )
 
-        await self.peer.send(message)
-        response = await self.peer.receive()
+        try:
+            await asyncio.wait_for(
+                self.peer.send(message), timeout=10
+            )
+
+            response = await asyncio.wait_for(
+                self.peer.receive(), timeout=10
+            )
+
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                "No response received from the remote peer."
+            ) from exc
 
         if response.message_type == "error":
-            task.mark_failed(response.payload.get("error", "Unknown error"))
-            raise RuntimeError(task.error)
+            error = response.payload.get("error", "Unknown error")
+            task.mark_failed(error)
+            raise RuntimeError(error)
 
         if response.message_type != "task_result":
             raise ValueError("Unexpected response from remote peer.")
@@ -117,8 +149,9 @@ class PeerTaskClient:
         if response.payload.get("status") == "completed":
             task.mark_completed(response.payload.get("result"))
         else:
-            task.mark_failed(
-                response.payload.get("error", "Task execution failed.")
+            error = response.payload.get(
+                "error", "Task execution failed."
             )
+            task.mark_failed(error)
 
         return task
