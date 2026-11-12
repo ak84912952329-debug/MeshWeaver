@@ -1,7 +1,7 @@
 # MeshWeaver
 Zero-Dependency P2P Async Task Broker built with Python
 
-A Python-based peer-to-peer task execution system that allows multiple peers to communicate, submit tasks, and receive execution results.
+A Python-based peer-to-peer task execution system that allows multiple peers to communicate, submit tasks, and receive execution results.It uses a broker and registered workers to manage and execute tasks.
 
 ## Features
 
@@ -16,7 +16,7 @@ A Python-based peer-to-peer task execution system that allows multiple peers to 
 
 ## Project Structure
 
-```text
+
 MeshWeaver/
 │
 ├── broker.py
@@ -34,7 +34,7 @@ MeshWeaver/
 │
 ├── README.md
 └── main.py
-```
+
 
 ## Technologies Used
 
@@ -43,6 +43,7 @@ MeshWeaver/
 - TCP Networking
 - JSON
 - Unittest
+- Streamlit
 
 ## How to Run
 
@@ -50,12 +51,20 @@ MeshWeaver/
 2. Open the project folder.
 3. Run the tests using:
 
-```bash
+
 python -m unittest test_network -v
 python -m unittest test_broker -v
 python -m unittest test_worker -v
 python -m unittest test_peer_integration -v
-```
+python -m unittest discover -v
+
+
+
+Start the dashboard.py
+
+streamlit run dashboard.py
+
+
 
 ## Working
 
